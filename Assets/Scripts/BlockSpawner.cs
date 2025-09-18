@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using Cinemachine;
+using UnityEngine.SceneManagement; 
 
 public class BlockSpawner : MonoBehaviour
 {
@@ -9,17 +10,16 @@ public class BlockSpawner : MonoBehaviour
     public float moveSpeed = 5f;
     public CinemachineVirtualCamera vCam;
     public Transform cameraTarget;
-
-    // New variable to control the camera's zoom level
     public float cameraOrthographicSize = 6f;
-
+    public Transform groundTransform;
     private GameObject currentBlock;
     private GameObject topBlock;
     private bool isMovingRight = true;
-    private float moveDirection = 1f;
+    private float moveDirection = 0.5f;
 
     private void Start()
     {
+        Block.groundTransform = groundTransform;
         SpawnBlock();
     }
 
@@ -27,12 +27,12 @@ public class BlockSpawner : MonoBehaviour
     {
         if (currentBlock != null)
         {
-            // Move the current block back and forth
+            
             float horizontalMovement = moveDirection * moveSpeed * Time.deltaTime;
             currentBlock.transform.position += new Vector3(horizontalMovement, 0, 0);
 
-            // Reverse direction if it hits a boundary (adjust as needed)
-            if (currentBlock.transform.position.x > 5f || currentBlock.transform.position.x < -5f)
+            
+            if (currentBlock.transform.position.x > 3f || currentBlock.transform.position.x < -3f)
             {
                 moveDirection *= -1;
             }
@@ -42,7 +42,6 @@ public class BlockSpawner : MonoBehaviour
             return;
         }
 
-        // Drop the block on left mouse click
         if (Input.GetMouseButtonDown(0))
         {
             DropBlock();
@@ -83,23 +82,49 @@ public class BlockSpawner : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
 
         SpawnBlock();
+
+        /*Rigidbody2D rb = block.GetComponent<Rigidbody2D>();
+
+        // Wait until the block has settled
+        yield return new WaitUntil(() => rb.velocity.sqrMagnitude < 0.1f);
+
+        // Check if the block has settled on the ground
+        // Use the ground's Y position plus half the block's height as a threshold
+        float blockHeight = block.GetComponent<Renderer>().bounds.size.y / 2f;
+        //if a block clone touch the ground then game will over 
+        // if the block's bottom is at or below the ground level
+
+
+
+        if (block.transform.position.y <= groundTransform.position.y + blockHeight + 0.1f)
+        {
+            Debug.Log("Game Over! A block touched the ground.");
+            // Implement your game over logic here
+            // Example:
+            // Time.timeScale = 0; // Freeze the game
+            // FindObjectOfType<UIManager>().ShowGameOverScreen();
+            yield break; // Exit the coroutine
+        }
+
+        topBlock = block;
+        yield return new WaitForSeconds(0.5f);
+        SpawnBlock();*/
     }
 
     void UpdateCameraTarget()
     {
         if (cameraTarget == null || vCam == null) return;
 
-        // **PRIMARY CHANGE:** The camera now follows the currently active block.
         if (topBlock != null && currentBlock != null)
         {
-            // Midpoint between top block and current block
+            
             Vector3 mid = (topBlock.transform.position + currentBlock.transform.position) / 2f;
-            // cameraTarget.position = new Vector3(0, mid.y, 0);
+            
 
             cameraTarget.position = Vector3.Lerp(
                 cameraTarget.position,
                 new Vector3(0, mid.y, 0),
-                Time.deltaTime * 3f // adjust speed
+                Time.deltaTime * 3f 
             );
 
         }
@@ -113,4 +138,8 @@ public class BlockSpawner : MonoBehaviour
         // **NEW:** Set the camera's zoom level
         vCam.m_Lens.OrthographicSize = cameraOrthographicSize;
     }
+
+
+    
+    
 }

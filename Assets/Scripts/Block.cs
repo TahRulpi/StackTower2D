@@ -1,25 +1,34 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Block : MonoBehaviour
 {
+    // A flag to indicate if this is the first block
+    public static bool isFirstBlock = true;
+
+    // The ground transform, used to check if the block is on the ground
+    public static Transform groundTransform;
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Block") || collision.gameObject.CompareTag("Ground"))
-        {
-            // Successfully stacked
-           // GetComponent<Rigidbody2D>().gravityScale = 0; // stop falling
-            //GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
-        }
-    }
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
 
-    private void Update()
-    {
-        if (transform.position.y < -10f) // Fell off screen
+        if (collision.gameObject.CompareTag("Ground"))
         {
-            Destroy(gameObject);
-            Debug.Log("Game Over!");
+            if (isFirstBlock)
+            {
+                isFirstBlock = false;
+                Debug.Log("First block landed.");
+                return; 
+            }
+
+            if (transform.position.y <= groundTransform.position.y + 0.5f)
+            {
+                Debug.Log("Game Over! A subsequent block touched the ground.");
+                SceneManager.LoadScene("Menu");
+            }
         }
     }
 }

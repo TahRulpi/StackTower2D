@@ -19,7 +19,7 @@ public class BlockSpawner : MonoBehaviour
 
     private void Start()
     {
-        Block.groundTransform = groundTransform;
+       //Block.groundTransform = groundTransform;
         SpawnBlock();
     }
 
@@ -83,32 +83,6 @@ public class BlockSpawner : MonoBehaviour
 
         SpawnBlock();
 
-        /*Rigidbody2D rb = block.GetComponent<Rigidbody2D>();
-
-        // Wait until the block has settled
-        yield return new WaitUntil(() => rb.velocity.sqrMagnitude < 0.1f);
-
-        // Check if the block has settled on the ground
-        // Use the ground's Y position plus half the block's height as a threshold
-        float blockHeight = block.GetComponent<Renderer>().bounds.size.y / 2f;
-        //if a block clone touch the ground then game will over 
-        // if the block's bottom is at or below the ground level
-
-
-
-        if (block.transform.position.y <= groundTransform.position.y + blockHeight + 0.1f)
-        {
-            Debug.Log("Game Over! A block touched the ground.");
-            // Implement your game over logic here
-            // Example:
-            // Time.timeScale = 0; // Freeze the game
-            // FindObjectOfType<UIManager>().ShowGameOverScreen();
-            yield break; // Exit the coroutine
-        }
-
-        topBlock = block;
-        yield return new WaitForSeconds(0.5f);
-        SpawnBlock();*/
     }
 
     void UpdateCameraTarget()

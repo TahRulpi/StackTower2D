@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using Cinemachine;
-using UnityEngine.SceneManagement; 
+using UnityEngine.SceneManagement;
 
 public class BlockSpawner : MonoBehaviour
 {
@@ -12,6 +12,7 @@ public class BlockSpawner : MonoBehaviour
     public Transform cameraTarget;
     public float cameraOrthographicSize = 6f;
     public Transform groundTransform;
+
     private GameObject currentBlock;
     private GameObject topBlock;
     private bool isMovingRight = true;
@@ -19,33 +20,32 @@ public class BlockSpawner : MonoBehaviour
 
     private void Start()
     {
-       //Block.groundTransform = groundTransform;
+        // Block.groundTransform = groundTransform; // Assuming this line is for a variable not shown
         SpawnBlock();
     }
 
     void Update()
     {
+        // Handle input only if a block is currently moving
         if (currentBlock != null)
         {
-            
+            // 1. Block Movement
             float horizontalMovement = moveDirection * moveSpeed * Time.deltaTime;
             currentBlock.transform.position += new Vector3(horizontalMovement, 0, 0);
 
-            
+            // 2. Edge Detection (Reverse direction)
             if (currentBlock.transform.position.x > 3f || currentBlock.transform.position.x < -3f)
             {
                 moveDirection *= -1;
             }
-        }
-        else
-        {
-            return;
-        }
 
-        if (Input.GetMouseButtonDown(0))
-        {
-            DropBlock();
+            // 3. Drop Input
+            if (Input.GetMouseButtonDown(0))
+            {
+                DropBlock();
+            }
         }
+        // If currentBlock is null, we are waiting for the previous block to land or the game is over.
 
         UpdateCameraTarget();
     }
@@ -68,7 +68,10 @@ public class BlockSpawner : MonoBehaviour
             Rigidbody2D rb = currentBlock.GetComponent<Rigidbody2D>();
             rb.gravityScale = 1;
 
+            // Start coroutine to check landing and then spawn the next block
             StartCoroutine(CheckBlockLanded(currentBlock));
+
+            // CRITICAL: Set currentBlock to null immediately so input is ignored while it drops
             currentBlock = null;
         }
     }
@@ -76,13 +79,18 @@ public class BlockSpawner : MonoBehaviour
     IEnumerator CheckBlockLanded(GameObject block)
     {
         Rigidbody2D rb = block.GetComponent<Rigidbody2D>();
+        // Wait until velocity is near zero (meaning it has landed)
         yield return new WaitUntil(() => rb.velocity.sqrMagnitude < 0.1f);
 
+        // Update the top block of the stack
         topBlock = block;
-        yield return new WaitForSeconds(0.5f);
 
-        SpawnBlock();
-
+        // Wait briefly, then spawn the next block, only if the game hasn't ended
+        if (Time.timeScale > 0) // Check if the game is not paused (i.e., not game over)
+        {
+            yield return new WaitForSeconds(0.5f);
+            SpawnBlock();
+        }
     }
 
     void UpdateCameraTarget()
@@ -91,29 +99,17 @@ public class BlockSpawner : MonoBehaviour
 
         if (topBlock != null && currentBlock != null)
         {
-            
             Vector3 mid = (topBlock.transform.position + currentBlock.transform.position) / 2f;
-            
 
             cameraTarget.position = Vector3.Lerp(
                 cameraTarget.position,
                 new Vector3(0, mid.y, 0),
-                Time.deltaTime * 3f 
+                Time.deltaTime * 3f
             );
-
         }
-        /*else if (topBlock != null)
-        {
-            // Fallback: If no block is currently moving, follow the top block of the tower.
-            Vector3 targetPos = new Vector3(0, topBlock.transform.position.y, 0);
-            cameraTarget.position = Vector3.Lerp(cameraTarget.position, targetPos, Time.deltaTime * 5f);
-        }*/
 
-        // **NEW:** Set the camera's zoom level
         vCam.m_Lens.OrthographicSize = cameraOrthographicSize;
     }
 
 
-    
-    
 }

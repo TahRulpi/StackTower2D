@@ -1,89 +1,81 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
 
 public class Block : MonoBehaviour
 {
-    // The first block (the one resting on the ground) should not trigger Game Over.
-    // This is static because we need to track it across all block instances.
     public static bool isFirstBlock = true;
-
-    // IMPORTANT: Reference to the Game Over Panel. This MUST be set in the Inspector 
-    // on your block prefab.
     public GameObject gameOverPanel;
 
-    public void Start()
-    {
-       
-
-
-    }
+    // NEW: Public reference to the Spawner to call its coroutine
+    [HideInInspector] public BlockSpawner spawner;
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // Check for collision with the ground layer/tag
+        // Prevent repeated checks after the block has successfully stacked or failed.
+        if (this.enabled == false) return;
+
+        // -------------------------
+        // 1. GROUND COLLISION (Game Over or First Block)
+        // -------------------------
         if (collision.gameObject.CompareTag("Ground"))
         {
-            // If it's the very first block, set the flag and exit.
             if (isFirstBlock)
             {
                 isFirstBlock = false;
                 Debug.Log("First block landed successfully.");
+
+                // IMPORTANT: Tell the Spawner to check the landing and spawn the next one.
+                spawner?.StartCoroutine(spawner.CheckBlockLanded(gameObject));
+
+                this.enabled = false; // Block is set, disable its script
                 return;
             }
 
             // If any subsequent block hits the ground, it's Game Over.
             HandleGameOver();
+            this.enabled = false; // Block has failed, disable its script
+            return;
+        }
+
+        // -------------------------
+        // 2. BLOCK COLLISION (Successful Stack)
+        // -------------------------
+        if (collision.gameObject.CompareTag("Block"))
+        {
+            // CRITICAL: Stop the falling block immediately to prevent physics glitches
+            Rigidbody2D rb = GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.gravityScale = 0;
+                rb.velocity = Vector2.zero;
+            }
+
+            // Tell the Spawner to update the top block and spawn the next one.
+            spawner?.StartCoroutine(spawner.CheckBlockLanded(gameObject));
+
+            this.enabled = false; // Block is successfully stacked, disable its script
         }
     }
 
     private void HandleGameOver()
     {
-        // Prevent multiple game over triggers
-        if (Time.timeScale == 0f)
-        {
-            return;
-        }
+        if (Time.timeScale == 0f) return;
 
         Debug.Log("Game Over Triggered! Block touched the ground.");
 
-
-        // 1. Activate the Game Over Panel
-        // This relies on you setting the 'gameOverPanel' public variable on the prefab.
+        // Game Over logic (Panel activation, TimeScale stop, etc.)
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
         }
-        else
-        {
-            // Fallback: Try to find the panel if the Inspector link was missed.
-            GameObject panel = GameObject.Find("GameOverPanel"); // Adjust this name if your panel is named differently
-            if (panel != null)
-            {
-                panel.SetActive(true);
-            }
-            else
-            {
-                Debug.LogError("Game Over Panel is NULL! Make sure it is assigned in the Block Prefab Inspector OR named 'GameOverPanel' in the scene.");
-            }
-        }
 
-
-        // 2. Deactivate the Gameplay UI
         GameObject gameplayUI = GameObject.Find("GameplayUI");
         if (gameplayUI != null)
         {
             gameplayUI.SetActive(false);
         }
 
-        // 3. Stop the Block Spawner
-        BlockSpawner spawner = FindObjectOfType<BlockSpawner>();
-        if (spawner != null)
-        {
-            spawner.enabled = false;
-        }
-
-        // 4. Stop the game completely (MUST be the LAST step to ensure UI updates finish)
+        spawner.enabled = false;
         Time.timeScale = 0f;
     }
 }
